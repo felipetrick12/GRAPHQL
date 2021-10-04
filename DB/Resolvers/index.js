@@ -13,7 +13,7 @@ const resolvers = {
       if (newUser) {
         throw new Error("El usuario ya existe");
       }
-      const salt = await brcrypt.getSalt(10);
+      const salt = brcrypt.genSaltSync(10);
       input.password = await brcrypt.hash(password, salt);
 
       try {
