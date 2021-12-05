@@ -1,4 +1,5 @@
-const Usuario = require("../../models/Usuario").default;
+const Products = require("../../models/Products");
+const Usuario = require("../../models/Usuario");
 const brcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config({
@@ -6,7 +7,7 @@ require("dotenv").config({
 });
 
 const createdToken = (user, key, expiresIn) => {
-  const { id, email, nombre, apellido } = user;
+  const { id } = user;
 
   return jwt.sign({ id }, key, { expiresIn });
 };
@@ -18,6 +19,26 @@ const resolvers = {
       const userId = await jwt.verify(token, process.env.SECRET_TOKEN);
 
       return userId;
+    },
+    getAllProducts: async () => {
+      try {
+        const products = await Products.find({});
+        return products;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getProductID: async (_, { id }) => {
+      try {
+        const product = await Products.findById(id);
+
+        if (!product) {
+          throw new Error("Producto no encontrado");
+        }
+        return product;
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
   Mutation: {
@@ -60,6 +81,46 @@ const resolvers = {
       return {
         token: createdToken(existsUser, process.env.SECRET_TOKEN, "24h"),
       };
+    },
+    createdProduct: async (_, { input }) => {
+      try {
+        const newProduct = new Products(input);
+
+        const createdProduct = await newProduct.save();
+
+        return {
+          message: "Producto creado con exito!",
+          product: createdProduct,
+        };
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    updateProduct: async (_, { id, input }) => {
+      let product = await Products.findById(id);
+      if (!product) {
+        throw new Error("Producto no encontrado");
+      }
+      try {
+        product = await Products.findByIdAndUpdate({ _id: id }, input, {
+          new: true,
+        });
+        return product;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    deleteProduct: async (_, { id }) => {
+      let product = await Products.findById(id);
+      if (!product) {
+        throw new Error("Producto no encontrado");
+      }
+      try {
+        await Products.findByIdAndDelete({ _id: id });
+        return "El producto fue eliminado con exito";
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
 };
